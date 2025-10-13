@@ -2,7 +2,7 @@ import threading, time, sqlite3, os, sys, datetime, platform
 if not sys.platform.startswith('darwin'):
     sys.exit('OpenEmu is a macOS exclusive application.')
 
-import rumps, pypresence, Quartz, AppKit
+import rumps, presence, Quartz, AppKit
 
 # Set default appname
 appName = 'OpenEmu'
@@ -29,16 +29,11 @@ class Client(rumps.App):
         super().__init__('OpenEmuRPC', title = '🎮')
         threading.Thread(target = self.background, daemon = True).start()
 
-    def create_instance(self, clientID:str = '901628121214779412', pipe:int = 0):
-        self.rpc = pypresence.Presence(clientID, pipe = pipe)
-
     def connect(self):
-        if not self.rpc:
-            self.create_instance()
         try:
-            self.rpc.connect()
-        except Exception as e:
-            self.handle_error(e, True)
+            self.rpc = presence.Client('901628121214779412')
+        except (ConnectionRefusedError, FileNotFoundError):
+            pass
 
     def handle_error(self, error:Exception, quit:bool):
         if not os.path.isdir(path):
@@ -66,16 +61,11 @@ class Client(rumps.App):
 
     def update(self):
         if not self.is_running():
-            self.rpc.clear()
+            self.rpc.update()
             return
         windows = self.get_windows()
         menus = False
-        dict = {
-            'large_image': 'main',
-            'large_text': appName,
-            'buttons': [{'label': 'See %s' % appName, 'url': 'https://openemu.org/'},],
-            'details': 'Idly in menus...',
-        }
+        dict = {}
         for i in ('Library', 'Gameplay', 'Controls', 'Cores', 'System Files', 'Shader Parameters'):
             if i in windows:
                 menus = i
@@ -101,16 +91,20 @@ class Client(rumps.App):
                     dict['small_image'] = art
                     dict['small_text'] = windows[1]
             dict['details'] = 'Playing %s' % game
+            dict["status_display_type"] = presence.StatusDisplayType.DETAILS
             dict['large_text'] = windows[0]
             if menus:
-                dict['details'] = ('In %s of ' + game) % menus
+                dict['state'] = 'In %s menu...' % menus
         for key in list(dict):
             if isinstance(dict[key], str):
                 if len(dict[key]) < 2:
                     del dict[key]
                 elif len(dict[key]) > 128:
                     dict[key] = dict[key][:128]
-        self.rpc.update(**dict)
+        if dict:
+            self.rpc.update(presence.Presence(**dict))
+        else:
+            self.rpc.update()
 
     def get_artwork(self, title:str):
         try:
