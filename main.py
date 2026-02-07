@@ -78,21 +78,27 @@ class Client(rumps.App):
             data['start'] = self.start
             if appName in windows:
                 windows.remove(appName)
-            game = windows[0]
-            art = self.get_artwork(windows[0])
-            if art:
-                data['large_image'] = art
-            if len(windows) > 1:
-                game = ', '.join(windows)
-                art = self.get_artwork(windows[1])
-                if art:
-                    data['small_image'] = art
-                    data['small_text'] = windows[1]
-            data['details'] = 'Playing %s' % game
+            
+            game_title = windows[0]
+            game_info = self.get_game_info(game_title)
+            
+            data['details'] = 'Playing %s' % game_title
+            data['large_text'] = game_title
             data["status_display_type"] = presence.StatusDisplayType.DETAILS
-            data['large_text'] = windows[0]
+
+            if game_info:
+                if game_info.get('art_url'):
+                    data['large_image'] = game_info['art_url']
+                
+                system_id = game_info.get('system_id', '')
+                if system_id:
+                    icon_name = system_id.replace('openemu.system.', '')
+                    data['small_image'] = icon_name
+                    data['small_text'] = game_info.get('system_name', icon_name).capitalize()
+
             if menus:
                 data['state'] = 'In %s menu...' % menus
+        
         for key in list(data):
             if isinstance(data[key], str):
                 if len(data[key]) < 2:
@@ -107,7 +113,7 @@ class Client(rumps.App):
         else:
             self.rpc.update()
 
-    def get_artwork(self, title:str):
+    def get_game_info(self, title:str):
         try:
             db_file = os.path.join(emupath, 'Library.storedata')
             if not os.path.exists(db_file):
@@ -115,18 +121,25 @@ class Client(rumps.App):
             con = sqlite3.connect(db_file)
             cursor = con.cursor()
 
-            cursor.execute('SELECT ZBOX, ZSOURCE FROM ZIMAGE WHERE ZSOURCE IS NOT NULL')
-            art = {i[0]: i[1] for i in cursor.fetchall()}
-            
-            cursor.execute('SELECT Z_PK, ZGAMETITLE FROM ZGAME')
-            games = cursor.fetchall()
+            cursor.execute('''
+                SELECT g.Z_PK, g.ZGAMETITLE, s.ZSYSTEMIDENTIFIER, s.ZLASTLOCALIZEDNAME, i.ZSOURCE
+                FROM ZGAME g
+                LEFT JOIN ZSYSTEM s ON g.ZSYSTEM = s.Z_PK
+                LEFT JOIN ZIMAGE i ON g.Z_PK = i.ZBOX
+                WHERE g.ZGAMETITLE IS NOT NULL
+            ''')
+            rows = cursor.fetchall()
             con.close()
 
-            for zpk, gtitle in games:
-                if not gtitle:
-                    continue
+            for zpk, gtitle, sys_id, sys_name, art_url in rows:
                 if title.lower() in gtitle.lower() or gtitle.lower() in title.lower():
-                    return art.get(zpk)
+                    return {
+                        'zpk': zpk,
+                        'title': gtitle,
+                        'system_id': sys_id,
+                        'system_name': sys_name,
+                        'art_url': art_url
+                    }
             return None
         except:
             return None
