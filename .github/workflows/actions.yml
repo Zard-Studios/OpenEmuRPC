@@ -1,11 +1,11 @@
-name: 'Build OpenEmuRPC'
+name: Build OpenEmuRPC
+
 on:
   release:
     types: [published]
 
 jobs:
   build:
-    name: 'Build OpenEmuRPC'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -15,20 +15,22 @@ jobs:
             arch: x86_64
           - os: macos-14
             arch: arm64
+
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-python@v3
-      with:
-        python-version: 3.12
+      - uses: actions/checkout@v4
 
-    - name: "Build"
-      run: |
-        cd scripts &&
-        ./build.sh &&
-        cd ../dist &&
-        zip -yr OpenEmuRPC-${{ matrix.arch }}.zip OpenEmuRPC.app/
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-    - name: "Upload Build"
-      uses: softprops/action-gh-release@v0.1.15
-      with:
-        files: dist/OpenEmuRPC-${{ matrix.arch }}.zip
+      - name: Build
+        run: |
+          cd scripts
+          ./build.sh
+          cd ../dist
+          zip -yr OpenEmuRPC-${{ matrix.arch }}.zip OpenEmuRPC.app
+
+      - name: Upload Build
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/OpenEmuRPC-${{ matrix.arch }}.zip
