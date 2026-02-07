@@ -29,11 +29,16 @@ class Client(rumps.App):
 
     def connect(self):
         try:
-            self.rpc = presence.Client('1469721500604043462')
-        except (ConnectionRefusedError, FileNotFoundError):
-            pass
+            client_id = '1469721500604043462'
+            print(f"Connecting to Discord with Client ID: {client_id}...")
+            self.rpc = presence.Client(client_id)
+            print("Successfully connected to Discord RPC!")
+        except Exception as e:
+            print(f"Error connecting to Discord: {e}")
+            self.rpc = None
 
     def handle_error(self, error:Exception, quit:bool):
+        print(f"Error: {error}")
         if not os.path.isdir(path):
             os.mkdir(path)
         with open(f'{path}/error.txt', 'a') as file:
@@ -80,16 +85,21 @@ class Client(rumps.App):
 
     def update(self):
         if not self.rpc:
+            print("RPC not connected, retrying...")
             self.connect()
             return
         
         if not self.is_running():
+            print("OpenEmu is not running.")
             try:
                 self.rpc.update()
             except:
                 pass
             return
+        
+        print("OpenEmu is running, fetching info...")
         windows = self.get_windows()
+        print(f"Windows found: {windows}")
         menus = False
         data = {}
         for i in ('Library', 'Gameplay', 'Controls', 'Cores', 'System Files', 'Shader Parameters'):
