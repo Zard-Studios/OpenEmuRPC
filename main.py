@@ -143,18 +143,23 @@ class Client(rumps.App):
             if menus:
                 data['state'] = 'In %s menu...' % menus
         
+        print(f"Game Info: {game_info}")
         for key in list(data):
             if isinstance(data[key], str):
                 if len(data[key]) < 2:
                     del data[key]
                 elif len(data[key]) > 128:
                     data[key] = data[key][:128]
+        
+        print(f"Sending Data Payload: {data}")
         if data:
             try:
                 self.rpc.update(presence.Presence(**data))
+                print("Update sent successfully!")
             except Exception as e:
-                pass
+                print(f"RPC Update Failed: {e}")
         else:
+            print("No data to send, clearing presence.")
             self.rpc.update()
 
     def get_game_info(self, title:str):
