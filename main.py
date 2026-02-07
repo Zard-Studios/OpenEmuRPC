@@ -79,8 +79,15 @@ class Client(rumps.App):
     }
 
     def update(self):
+        if not self.rpc:
+            self.connect()
+            return
+        
         if not self.is_running():
-            self.rpc.update()
+            try:
+                self.rpc.update()
+            except:
+                pass
             return
         windows = self.get_windows()
         menus = False
@@ -183,8 +190,11 @@ class Client(rumps.App):
 
     def background(self):
         while True:
-            self.update()
-            time.sleep(1)
+            try:
+                self.update()
+            except Exception as e:
+                print(f"Update error: {e}")
+            time.sleep(15)
 
 if __name__ == '__main__':
     Client().run()
