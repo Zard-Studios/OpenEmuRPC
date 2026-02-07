@@ -2,11 +2,9 @@
 
 A simple application that provides your current OpenEmu game as an RPC state in Discord via [PyPresence](https://github.com/qwertyquerty/pypresence). Only available for MacOS, as is [OpenEmu](https://openemu.org/).
 
-## 🚀 New Features (Zard Studios Fork)
-Unlike the original project, this version includes:
-- **Automatic Game Recognition**: Detects the game title directly from OpenEmu's window.
-- **Automated Box Art**: Automatically fetches high-quality cover art from the [Libretro Thumbnail Database](https://thumbnails.libretro.com/) (RetroArch). No more manual uploads!
-- **Smart Matching**: Handles regional variants (USA, Europe, Japan, World) to ensure the correct cover art is always found.
+## New Features (Zard Studios Fork)
+This fork includes:
+- **Automated Box Art**: Automatically fetches high-quality cover art from the [Libretro Thumbnail Database](https://thumbnails.libretro.com/) (RetroArch).
 - **Apple Silicon Support**: Builds and runs natively on M1/M2/M3 Macs.
 
 
