@@ -63,7 +63,7 @@ class Client(rumps.App):
             return
         windows = self.get_windows()
         menus = False
-        dict = {}
+        data = {}
         for i in ('Library', 'Gameplay', 'Controls', 'Cores', 'System Files', 'Shader Parameters'):
             if i in windows:
                 menus = i
@@ -75,55 +75,58 @@ class Client(rumps.App):
             if self.games != windows:
                 self.start = round(time.time())
                 self.games = windows.copy()
-            dict['start'] = self.start
+            data['start'] = self.start
             if appName in windows:
                 windows.remove(appName)
             game = windows[0]
             art = self.get_artwork(windows[0])
             if art:
-                dict['large_image'] = art
+                data['large_image'] = art
             if len(windows) > 1:
                 game = ', '.join(windows)
                 art = self.get_artwork(windows[1])
                 if art:
-                    dict['small_image'] = art
-                    dict['small_text'] = windows[1]
-            dict['details'] = 'Playing %s' % game
-            dict["status_display_type"] = presence.StatusDisplayType.DETAILS
-            dict['large_text'] = windows[0]
+                    data['small_image'] = art
+                    data['small_text'] = windows[1]
+            data['details'] = 'Playing %s' % game
+            data["status_display_type"] = presence.StatusDisplayType.DETAILS
+            data['large_text'] = windows[0]
             if menus:
-                dict['state'] = 'In %s menu...' % menus
-        for key in list(dict):
-            if isinstance(dict[key], str):
-                if len(dict[key]) < 2:
-                    del dict[key]
-                elif len(dict[key]) > 128:
-                    dict[key] = dict[key][:128]
-        if dict:
-            self.rpc.update(presence.Presence(**dict))
+                data['state'] = 'In %s menu...' % menus
+        for key in list(data):
+            if isinstance(data[key], str):
+                if len(data[key]) < 2:
+                    del data[key]
+                elif len(data[key]) > 128:
+                    data[key] = data[key][:128]
+        if data:
+            try:
+                self.rpc.update(presence.Presence(**data))
+            except Exception as e:
+                self.handle_error(f"RPC Update failed: {e}", False)
         else:
             self.rpc.update()
 
     def get_artwork(self, title:str):
         try:
-            con = sqlite3.connect(os.path.join(emupath, 'Library.storedata'))
+            db_file = os.path.join(emupath, 'Library.storedata')
+            if not os.path.exists(db_file):
+                return None
+            con = sqlite3.connect(db_file)
             cursor = con.cursor()
 
-            cursor.execute('SELECT ZBOX, ZSOURCE FROM ZIMAGE')
-            art = [(i[0], i[1]) for i in cursor.fetchall()]
-            cursor.execute('SELECT ZGAMETITLE FROM ZGAME')
-            games = [ i[0] for i in cursor.fetchall() ]
-            cursor.execute('SELECT Z_PK FROM ZROM')
-            zpk = [ i[0] for i in cursor.fetchall() ]
-            games = [ [zpk[i], games[i]] for i in range(len(games)) ]
+            cursor.execute('SELECT ZBOX, ZSOURCE FROM ZIMAGE WHERE ZSOURCE IS NOT NULL')
+            art = {i[0]: i[1] for i in cursor.fetchall()}
+            
+            cursor.execute('SELECT Z_PK, ZGAMETITLE FROM ZGAME')
+            games = cursor.fetchall()
             con.close()
 
-            for i in games:
-                if not i[1]:
+            for zpk, gtitle in games:
+                if not gtitle:
                     continue
-                if title in i[1]:
-                    url = next(n[1] for n in art if n[0] == i[0])
-                    return url
+                if title.lower() in gtitle.lower() or gtitle.lower() in title.lower():
+                    return art.get(zpk)
             return None
         except:
             return None
