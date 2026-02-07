@@ -1,14 +1,16 @@
-import threading, time, sqlite3, os, sys, datetime, platform
+import threading, time, sqlite3, os, sys, datetime, platform, urllib.parse, urllib.request
 if not sys.platform.startswith('darwin'):
     sys.exit('OpenEmu is a macOS exclusive application.')
 
 import rumps, presence, Quartz, AppKit
 
+# Set default appname
 appName = 'OpenEmu'
 
 path = os.path.expanduser('~/Library/Application Support/OpenEmuRPC')
 emupath = os.path.expanduser('~/Library/Application Support/OpenEmu/Game Library')
 
+# Define menu bar object and run it
 class Client(rumps.App):
     def __init__(self):
         try:
@@ -54,6 +56,26 @@ class Client(rumps.App):
 
     def request_permissions(self):
         Quartz.CGRequestScreenCaptureAccess()
+
+    def is_valid_url(self, url):
+        # We cache results to avoid spamming HEAD requests
+        if not hasattr(self, 'url_cache'):
+            self.url_cache = {}
+        
+        if url in self.url_cache:
+            return self.url_cache[url]
+        
+        try:
+            req = urllib.request.Request(url, method='HEAD')
+            # Set a user agent to avoid being blocked
+            req.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15')
+            with urllib.request.urlopen(req, timeout=2) as response:
+                is_valid = response.status == 200
+                self.url_cache[url] = is_valid
+                return is_valid
+        except:
+             self.url_cache[url] = False
+             return False
 
     def is_running(self):
         apps = AppKit.NSWorkspace.sharedWorkspace().launchedApplications()
@@ -130,11 +152,37 @@ class Client(rumps.App):
                 
                 if art_url and 'gamespot.com' not in art_url:
                     data['large_image'] = art_url
-                elif system_id in self.libretro_map:
+                # Enhanced Libretro Image Logic
+                if system_id in self.libretro_map:
                     lr_system = self.libretro_map[system_id]
-                    safe_title = "".join([c if c not in '&*/:<>?\\|' else '_' for c in game_title])
-                    data['large_image'] = f"https://thumbnails.libretro.com/{lr_system}/Named_Boxarts/{safe_title}.png"
-                
+                    encoded_system = urllib.parse.quote(lr_system)
+                    
+                    # Try exact title first, then regions
+                    clean_title = game_title.replace(':', '_').replace('/', '_').replace('&', '_').replace('*', '_').replace('?', '_')
+                    potential_titles = [
+                        clean_title,
+                        f"{clean_title} (USA)",
+                        f"{clean_title} (World)",
+                        f"{clean_title} (Europe)",
+                        f"{clean_title} (Japan)",
+                        f"{clean_title} (USA, Europe)",
+                    ]
+                    
+                    found_art = None
+                    for title_variant in potential_titles:
+                        encoded_title = urllib.parse.quote(title_variant)
+                        url = f"https://thumbnails.libretro.com/{encoded_system}/Named_Boxarts/{encoded_title}.png"
+                        
+                        # Simple cache check for valid URLs (could be optimized)
+                        if self.is_valid_url(url):
+                             found_art = url
+                             break
+                    
+                    if found_art:
+                        data['large_image'] = found_art
+                    else:
+                        print(f"Could not find Libretro art for: {game_title}")
+
                 if system_id:
                     icon_name = system_id.replace('openemu.system.', '')
                     data['small_image'] = icon_name
