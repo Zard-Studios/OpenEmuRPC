@@ -140,7 +140,7 @@ class Client(rumps.App):
             game_title = windows[0]
             game_info = self.get_game_info(game_title)
             
-            data['details'] = 'Playing %s' % game_title
+            data['details'] = game_title
             data['large_text'] = game_title
             data["status_display_type"] = presence.StatusDisplayType.DETAILS
 
