@@ -157,15 +157,21 @@ class Client(rumps.App):
                     lr_system = self.libretro_map[system_id]
                     encoded_system = urllib.parse.quote(lr_system)
                     
-                    # Try exact title first, then regions
-                    clean_title = game_title.replace(':', '_').replace('/', '_').replace('&', '_').replace('*', '_').replace('?', '_')
+                    # 1. Clean the title according to Libretro rules (replace special chars with _)
+                    # Libretro replaces &*/:`<>?\| with _
+                    # We also handle commonly used colons and other separators
+                    safe_title = game_title
+                    for char in '&*/:`<>?\|':
+                        safe_title = safe_title.replace(char, '_')
+                    
+                    # 2. Generate potential filenames (prioritizing USA/World for English users)
                     potential_titles = [
-                        clean_title,
-                        f"{clean_title} (USA)",
-                        f"{clean_title} (World)",
-                        f"{clean_title} (Europe)",
-                        f"{clean_title} (Japan)",
-                        f"{clean_title} (USA, Europe)",
+                        f"{safe_title} (USA)",
+                        f"{safe_title} (World)",
+                        f"{safe_title} (Europe)",
+                        f"{safe_title} (Japan)",
+                        f"{safe_title} (USA, Europe)",
+                        safe_title, # Exact match last
                     ]
                     
                     found_art = None
@@ -173,7 +179,6 @@ class Client(rumps.App):
                         encoded_title = urllib.parse.quote(title_variant)
                         url = f"https://thumbnails.libretro.com/{encoded_system}/Named_Boxarts/{encoded_title}.png"
                         
-                        # Simple cache check for valid URLs (could be optimized)
                         if self.is_valid_url(url):
                              found_art = url
                              break
@@ -181,7 +186,7 @@ class Client(rumps.App):
                     if found_art:
                         data['large_image'] = found_art
                     else:
-                        print(f"Could not find Libretro art for: {game_title}")
+                        print(f"Could not find Libretro art for: {game_title} (Tried: {potential_titles})")
 
                 if system_id:
                     icon_name = system_id.replace('openemu.system.', '')
