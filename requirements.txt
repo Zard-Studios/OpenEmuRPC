@@ -1,3 +1,5 @@
-rumps>=0.3.0
-pyobjc-framework-Quartz>=7.3
+rumps>=0.4.0
+pyobjc-framework-Quartz>=10.0
 mac-presence @ git+https://github.com/MCMi460/MacPresence.git
+setuptools<70.0.0
+py2app>=0.28

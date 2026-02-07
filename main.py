@@ -4,13 +4,11 @@ if not sys.platform.startswith('darwin'):
 
 import rumps, presence, Quartz, AppKit
 
-# Set default appname
 appName = 'OpenEmu'
 
 path = os.path.expanduser('~/Library/Application Support/OpenEmuRPC')
 emupath = os.path.expanduser('~/Library/Application Support/OpenEmu/Game Library')
 
-# Define menu bar object and run it
 class Client(rumps.App):
     def __init__(self):
         try:
@@ -108,11 +106,9 @@ class Client(rumps.App):
 
     def get_artwork(self, title:str):
         try:
-            # Connect to OpenEmu's library database
             con = sqlite3.connect(os.path.join(emupath, 'Library.storedata'))
             cursor = con.cursor()
 
-            # Get sources from image db
             cursor.execute('SELECT ZBOX, ZSOURCE FROM ZIMAGE')
             art = [(i[0], i[1]) for i in cursor.fetchall()]
             cursor.execute('SELECT ZGAMETITLE FROM ZGAME')
@@ -122,15 +118,14 @@ class Client(rumps.App):
             games = [ [zpk[i], games[i]] for i in range(len(games)) ]
             con.close()
 
-            # Find game in sources
             for i in games:
-                if not i[1]: # Prevent irregular games from prematurely ending the recursion
+                if not i[1]:
                     continue
                 if title in i[1]:
                     url = next(n[1] for n in art if n[0] == i[0])
                     return url
             return None
-        except: # On possible failure, just return None
+        except:
             return None
 
     def get_windows(self):
