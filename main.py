@@ -4,13 +4,11 @@ if not sys.platform.startswith('darwin'):
 
 import rumps, presence, Quartz, AppKit
 
-# Set default appname
 appName = 'OpenEmu'
 
 path = os.path.expanduser('~/Library/Application Support/OpenEmuRPC')
 emupath = os.path.expanduser('~/Library/Application Support/OpenEmu/Game Library')
 
-# Define menu bar object and run it
 class Client(rumps.App):
     def __init__(self):
         try:
@@ -197,14 +195,16 @@ class Client(rumps.App):
                 data['state'] = 'In %s menu...' % menus
         
         print(f"Game Info: {game_info}")
+        print(f"Sending Data Payload: {data}")
         for key in list(data):
             if isinstance(data[key], str):
                 if len(data[key]) < 2:
                     del data[key]
-                elif len(data[key]) > 128:
+                elif len(data[key]) > 256 and 'image' in key:
+                     data[key] = data[key][:256]
+                elif len(data[key]) > 128 and 'image' not in key:
                     data[key] = data[key][:128]
         
-        print(f"Sending Data Payload: {data}")
         if data:
             try:
                 self.rpc.update(presence.Presence(**data))
