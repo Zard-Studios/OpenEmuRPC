@@ -57,6 +57,27 @@ class Client(rumps.App):
                 return True
         return False
 
+    libretro_map = {
+        'openemu.system.snes': 'Nintendo - Super Nintendo Entertainment System',
+        'openemu.system.nes': 'Nintendo - Nintendo Entertainment System',
+        'openemu.system.gb': 'Nintendo - Game Boy',
+        'openemu.system.gbc': 'Nintendo - Game Boy Color',
+        'openemu.system.gba': 'Nintendo - Game Boy Advance',
+        'openemu.system.n64': 'Nintendo - Nintendo 64',
+        'openemu.system.ds': 'Nintendo - Nintendo DS',
+        'openemu.system.ps1': 'Sony - PlayStation',
+        'openemu.system.genesis': 'Sega - Mega Drive - Genesis',
+        'openemu.system.master': 'Sega - Master System',
+        'openemu.system.gamegear': 'Sega - Game Gear',
+        'openemu.system.psp': 'Sony - PlayStation Portable',
+        'openemu.system.pce': 'NEC - PC Engine - TurboGrafx 16',
+        'openemu.system.pc-fx': 'NEC - PC-FX',
+        'openemu.system.saturn': 'Sega - Saturn',
+        'openemu.system.dreamcast': 'Sega - Dreamcast',
+        'openemu.system.gamecube': 'Nintendo - GameCube',
+        'openemu.system.wii': 'Nintendo - Wii',
+    }
+
     def update(self):
         if not self.is_running():
             self.rpc.update()
@@ -87,10 +108,16 @@ class Client(rumps.App):
             data["status_display_type"] = presence.StatusDisplayType.DETAILS
 
             if game_info:
-                if game_info.get('art_url'):
-                    data['large_image'] = game_info['art_url']
-                
                 system_id = game_info.get('system_id', '')
+                art_url = game_info.get('art_url')
+                
+                if art_url and 'gamespot.com' not in art_url:
+                    data['large_image'] = art_url
+                elif system_id in self.libretro_map:
+                    lr_system = self.libretro_map[system_id]
+                    safe_title = "".join([c if c not in '&*/:<>?\\|' else '_' for c in game_title])
+                    data['large_image'] = f"https://thumbnails.libretro.com/{lr_system}/Named_Boxarts/{safe_title}.png"
+                
                 if system_id:
                     icon_name = system_id.replace('openemu.system.', '')
                     data['small_image'] = icon_name
@@ -109,7 +136,7 @@ class Client(rumps.App):
             try:
                 self.rpc.update(presence.Presence(**data))
             except Exception as e:
-                self.handle_error(f"RPC Update failed: {e}", False)
+                pass
         else:
             self.rpc.update()
 
