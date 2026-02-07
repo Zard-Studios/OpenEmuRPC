@@ -9,7 +9,7 @@ This fork includes:
 
 
 ## How to use
-Unzip and open the latest x86_64 version from the [releases tab](https://github.com/MCMi460/OpenEmuRPC/releases)
+Unzip and open the latest x86_64 version from the [releases tab](https://github.com/Zard-Studios/OpenEmuRPC/releases)
 ## How to build
 Download the repository and run [build.sh](scripts/build.sh).
 
