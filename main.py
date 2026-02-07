@@ -29,7 +29,7 @@ class Client(rumps.App):
 
     def connect(self):
         try:
-            self.rpc = presence.Client('901628121214779412')
+            self.rpc = presence.Client('1469721500604043462')
         except (ConnectionRefusedError, FileNotFoundError):
             pass
 
