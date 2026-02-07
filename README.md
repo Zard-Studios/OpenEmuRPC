@@ -13,7 +13,7 @@ Download the repository and run [build.sh](scripts/build.sh).
 ...and choose the app's location.
 
 ---
-If you have any issues, [please create an issue here](https://github.com/Zard-Studios/OpenEmuRPC/issues/new).
+If you have any issues, [please create an issue here](https://github.com/MCMi460/OpenEmuRPC/issues/new).
 
 ### Credits
 <a href="https://github.com/MCMi460"><img src="https://img.shields.io/static/v1?label=MCMi460&amp;message=Github&amp;color=c331d4"></a>
